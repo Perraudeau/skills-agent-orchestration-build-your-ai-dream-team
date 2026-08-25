@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Pulse</title>
+  <meta name="description" content="A contributor-focused view of project health, activity, and priorities.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <p class="eyebrow">Contributor workspace</p>
+      <h1>Project Pulse</h1>
+      <p class="intro">See what is moving, who is leading it, and where contributors can make the biggest difference.</p>
+    </header>
+
+    <main>
+      <section aria-labelledby="projects-heading">
+        <div class="summary-bar">
+          <div>
+            <h2 id="projects-heading">Projects at a glance</h2>
+            <p id="summary-text">A quick read on current work and the next useful contribution.</p>
+          </div>
+        </div>
+        <div id="dashboard" class="dashboard" role="list" aria-live="polite" aria-busy="true">
+          <p class="loading-state" role="status">Loading project updates…</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var dashboard = document.getElementById("dashboard");
+      var summaryText = document.getElementById("summary-text");
+      var validStatuses = ["active", "on track", "at risk", "blocked", "completed", "paused"];
+      var validPriorities = ["low", "medium", "high", "critical"];
+
+      function displayValue(value, fallback) {
+        return typeof value === "string" && value.trim() ? value.trim() : fallback;
+      }
+
+      function normalize(value, allowed) {
+        var cleanValue = typeof value === "string" ? value.trim().toLowerCase() : "";
+        return allowed.indexOf(cleanValue) !== -1 ? cleanValue : "unknown";
+      }
+
+      function label(value) {
+        return value === "unknown" ? "Not specified" : value.replace(/\b\w/g, function (letter) {
+          return letter.toUpperCase();
+        });
+      }
+
+      function classToken(value) {
+        return value.replace(/\s+/g, "-");
+      }
+
+      function contributorSummary(activity) {
+        return "Contributors can help by staying close to this work: " + activity;
+      }
+
+      function makeMetaItem(term, value) {
+        var wrapper = document.createElement("div");
+        var title = document.createElement("dt");
+        var description = document.createElement("dd");
+        title.textContent = term;
+        description.textContent = value;
+        wrapper.appendChild(title);
+        wrapper.appendChild(description);
+        return wrapper;
+      }
+
+      function renderProjects(projects) {
+        dashboard.replaceChildren();
+        dashboard.setAttribute("aria-busy", "false");
+        if (!projects.length) {
+          var empty = document.createElement("p");
+          empty.className = "empty-state";
+          empty.setAttribute("role", "status");
+          empty.textContent = "No projects are available yet. Check back when the team has shared an update.";
+          dashboard.appendChild(empty);
+          summaryText.textContent = "There are no project updates to display right now.";
+          return;
+        }
+
+        summaryText.textContent = projects.length + (projects.length === 1 ? " project" : " projects") + " with the latest contributor context.";
+        projects.forEach(function (project) {
+          var name = displayValue(project && project.name, "Unnamed project");
+          var owner = displayValue(project && project.owner, "Owner not specified");
+          var activity = displayValue(project && project.recentActivity, "No recent activity has been recorded.");
+          var status = normalize(project && project.status, validStatuses);
+          var priority = normalize(project && project.priority, validPriorities);
+          var article = document.createElement("article");
+          article.className = "project-card";
+          article.setAttribute("role", "listitem");
+
+          var heading = document.createElement("h3");
+          heading.textContent = name;
+          article.appendChild(heading);
+
+          var badges = document.createElement("div");
+          badges.className = "badges";
+          var statusBadge = document.createElement("span");
+          statusBadge.className = "status-badge status-" + classToken(status);
+          statusBadge.textContent = "Status: " + label(status);
+          var priorityBadge = document.createElement("span");
+          priorityBadge.className = "priority-badge priority-" + classToken(priority);
+          priorityBadge.textContent = "Priority: " + label(priority);
+          badges.appendChild(statusBadge);
+          badges.appendChild(priorityBadge);
+          article.appendChild(badges);
+
+          var meta = document.createElement("dl");
+          meta.className = "project-meta";
+          meta.appendChild(makeMetaItem("Owner", owner));
+          meta.appendChild(makeMetaItem("Recent activity", activity));
+          article.appendChild(meta);
+
+          var activityBlock = document.createElement("div");
+          activityBlock.className = "activity";
+          var summaryHeading = document.createElement("h4");
+          summaryHeading.textContent = "Contributor note";
+          var summary = document.createElement("p");
+          summary.textContent = displayValue(project && project.summary, contributorSummary(activity));
+          activityBlock.appendChild(summaryHeading);
+          activityBlock.appendChild(summary);
+          article.appendChild(activityBlock);
+          dashboard.appendChild(article);
+        });
+      }
+
+      function showError(message) {
+        dashboard.replaceChildren();
+        dashboard.setAttribute("aria-busy", "false");
+        var error = document.createElement("p");
+        error.className = "error-state";
+        error.setAttribute("role", "alert");
+        error.textContent = message;
+        dashboard.appendChild(error);
+        summaryText.textContent = "Project updates could not be loaded.";
+      }
+
+      fetch("project-data.json")
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("The project data request failed.");
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          if (!data || !Array.isArray(data.projects)) {
+            throw new Error("The project data format is invalid.");
+          }
+          renderProjects(data.projects);
+        })
+        .catch(function () {
+          showError("We couldn’t load project updates. Please try again later.");
+        });
+    }());
+  </script>
+</body>
+</html>

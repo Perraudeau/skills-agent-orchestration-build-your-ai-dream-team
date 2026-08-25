@@ -1,0 +1,25 @@
+{
+  "projects": [
+    {
+      "name": "Community Onboarding",
+      "owner": "Mona Patel",
+      "status": "Active",
+      "recentActivity": "Published the contributor welcome guide and opened the next documentation sprint.",
+      "priority": "High"
+    },
+    {
+      "name": "Design System Refresh",
+      "owner": "Alex Rivera",
+      "status": "On Track",
+      "recentActivity": "Reviewed button and form patterns with the frontend group.",
+      "priority": "Medium"
+    },
+    {
+      "name": "Release Automation",
+      "owner": "Jordan Lee",
+      "status": "At Risk",
+      "recentActivity": "The staging workflow is waiting on a permissions update.",
+      "priority": "Critical"
+    }
+  ]
+}
